@@ -119,11 +119,12 @@ public:
     }
     Dtype f_sigmoid( Dtype &x) {
         int index;
-        // We want to mapping x (-3 to 3) to the index ranging from 0 to 511 (because we have 512 values)
-        // So the index = (x/3.)*256 + 256, or x * 85.333333 + 256
+        // We want to mapping x to the index ranging from 0 to 511 (because we have 512 values)
+        // The look up table is generated with x ranging from -3. to 3.,
+        // So now the index = (x/3.)*256 + 256, or x * 85.333333 + 256
         // Note that in order to represent  the index has 8 integer bits, rather than 3 integer bits in the x.
 
-        Fixed_point<16, 8, 8> k("5555"); // the float number 256/3. (85.333333) is 0x5555 in fix<8,8> format
+        Fixed_point<16, 8, 8> k("5555"); // the float number 256/3. is 0x5555 in fix<8,8> format
 
         index = x.data * k.data >> 21; // fix<3,13> multiplies fix<8,8>, so we right shift 21 bits to get
                                        // the integer part of the output. The output should be  at least 10 bits
