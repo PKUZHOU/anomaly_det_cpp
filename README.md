@@ -7,6 +7,16 @@ You can run this project by running the following commands:
 `make -j`
 `./lstm`
 
+#### 2020-2-25 Update
+
+I have rewritten the acivation function.
+The output is slightly different from the original version, now you will get
+
+   `output is :DF38 -1.01526`
+The difference is caused by the modification of computational logic, and should have little effect.
+
+If necessary, I will re-generate the spread_sheet later.
+
 #### 2019-12-30 Update
 
 In this version, I replace the 64x64 matrices with so-called `block circulant matrix`, thus saving 7/8 of memory usage. 
