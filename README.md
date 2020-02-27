@@ -7,6 +7,17 @@ You can run this project by running the following commands:
 `make -j`
 `./lstm`
 
+#### 2020-2-27 Update
+
+I modify the generation logic of look-up table, then remove the multiplication in look-up operations.
+Now you can directly get the corresponding value using the input without multiplication.
+
+The output should be
+
+   `output is :DC0A -1.12378`
+
+Slightly different from the former value due to the modification of computational logic, I am going to check if this difference has any affects, and generate the new spreadsheet
+
 #### 2020-2-25 Update
 
 I have rewritten the acivation function.
