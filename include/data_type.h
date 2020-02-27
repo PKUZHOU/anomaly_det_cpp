@@ -200,7 +200,10 @@ public:
     // convert to float data
     explicit  operator float()
     {
-        return float(data)/(1<<DECBits);
+        int tmp = data;
+        tmp = tmp << (32-TOTBits);
+        tmp = tmp >> (32-TOTBits);
+        return float(tmp)/(1<<DECBits);
     }
 
 };

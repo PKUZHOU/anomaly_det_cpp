@@ -11,6 +11,7 @@
 #include <cmath>
 #include <data_type.h>
 #include <fstream>
+#include <cmath>
 
 typedef unsigned int uint;
 #define CIRCULANT_SIZE 8
@@ -117,38 +118,44 @@ public:
             infile >> pdata[i];
         }
     }
+
+    void generate_sigmoid_table()
+    {
+        Fixed_point<9,3,6> x;
+        for(int i = 0; i < TABLE_SIZE; i++ )
+        {
+            x.data = i;
+            float float_x = float(x);
+            float float_sigmoid_x = 1/(exp(-float_x)+1);
+            Fixed_point<16,3,13> fix_sigmoid_x(float_sigmoid_x);
+            std::cout<<fix_sigmoid_x<<" "<<std::endl;
+        }
+    }
+
+    void generate_tanh_table()
+    {
+        Fixed_point<9,3,6> x;
+        for(int i = 0; i < TABLE_SIZE; i++ )
+        {
+            x.data = i;
+            float float_x = float(x);
+            float float_tanh_x = (exp(float_x) - exp(-float_x))/(exp(-float_x)+ exp(float_x));
+            Fixed_point<16,3,13> fix_tanh_x(float_tanh_x);
+            std::cout<<fix_tanh_x<<" "<<std::endl;
+        }
+    }
+
     Dtype f_sigmoid( Dtype &x) {
         int index;
-        // We want to mapping x to the index ranging from 0 to 511 (because we have 512 values)
-        // The look up table is generated with x ranging from -3. to 3.,
-        // So now the index = (x/3.)*256 + 256, or x * 85.333333 + 256, we use constant k to represent 256/3.
-        // Note that k has 8 integer bits, rather than 3 integer bits in the x.
-
-        Fixed_point<16, 8, 8> k("5555"); // the float number 256/3. is 0x5555 in fix<8,8> format
-
-        index = x.data * k.data >> 21; // fix<3,13> multiplies fix<8,8>, so we right shift 21 bits to get
-                                       // the integer part of the output. The output should be  at least 10 bits
-                                       // to represent -512 to 512. I use integer here for convenience.
-        index = index + 256;           // then we add 256.
-
-        if(index < 0)  // make sure it is within 0 to 511
-            index = 0;
-        else if(index > 511)
-            index = 511;
-
+        // truncate the x, get the first 9bits
+        index = (x.data >> 7)&0x1FF;
         return sigmoid_table[index];
     }
 
     Dtype f_tanh( Dtype &x) {
         int index;
-        Fixed_point<16, 8, 8> k("5555"); // k = 85.333333
-        index = x.data * k.data >> 21;
-        index = index + 256;
-        if(index < 0)
-            index = 0;
-        else if(index > 511)
-            index = 511;
-
+        // truncate the x, get the first 9bits
+        index = (x.data >> 7)&0x1FF;
         return tanh_table[index];
     }
 

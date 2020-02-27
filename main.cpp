@@ -1,6 +1,7 @@
 #include <iostream>
 #include "model.h"
 #include "data_type.h"
+#include "operator.h"
 using namespace std;
 //
 int main() {
@@ -27,14 +28,8 @@ int main() {
 
     return 0;
 }
-//
 
 //int main() {
-//    Fixed_point<16,3,13>a(4.5f);
-//    Fixed_point<16,3,13>b(-0.5f);
-//    cout<<a<<endl;
-//    cout<<float(a)<<endl;
-//    cout<<float(a+b)<<endl;
-//    cout<<float(a*b)<<endl;
-//    cout<<float(a-b)<<endl;
+//    Activation <Fixed_point<9,3,6>> act;
+//    act.generate_tanh_table();
 //}
