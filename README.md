@@ -7,6 +7,15 @@ You can run this project by running the following commands:
 `make -j`
 `./lstm`
 
+#### 2020-3-3 Update
+
+Now we have regenerated the weight and spreadsheet, which you can see in the block_circulant folder 
+The outputs are verified, and the average error rate compared with the original method is just 0.1%. 
+
+The output should be
+
+    `output is :D6E6 -1.28442`
+
 #### 2020-2-27 Update
 
 I modify the generation logic of look-up table, then remove the multiplication in look-up operations.
