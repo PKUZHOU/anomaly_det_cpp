@@ -4,7 +4,8 @@
 #include "operator.h"
 using namespace std;
 //
-int main() {
+
+int test_int16(){
     cout << "Initialization" << std::endl;
     string weights_path = "./block_circulant/fix_16_weights";
 
@@ -15,7 +16,7 @@ int main() {
 
     auto model = new Model<Fixed_point<16,3,13>>(input_size, hidden_size, output_size, weights_path);
     Fixed_point<16,3,13> input[time_steps] = {
-        #include "input_data_1.h"
+    #include "input_data_1.h"
     };
 
     cout << "Forwarding" << std::endl;
@@ -23,10 +24,14 @@ int main() {
 
     cout<<"output is :";
     for(int i = 0;i<output_size;i++)
-        cout<<model->out[i]<<" " <<float(model->out[i]);
+    cout<<model->out[i]<<" " <<float(model->out[i]);
     cout<<endl;
 
     return 0;
+}
+
+int main() {
+    test_int16();
 }
 
 //int main() {
