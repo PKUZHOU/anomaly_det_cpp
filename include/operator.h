@@ -7,7 +7,8 @@
 
 #include <memory.h>
 #include <cassert>
-#include <malloc.h>
+//#include <malloc.h>
+#include <sys/malloc.h>
 #include <cmath>
 #include <data_type.h>
 #include <fstream>
@@ -87,6 +88,41 @@ Dtype *MatAddDuo(Dtype *A, Dtype *B, uint row, uint col) {
     return out;
 }
 
+template <class Dtype>
+Dtype *ScalaSub(Dtype A, Dtype * B, uint row, uint col){
+    Dtype * out = (Dtype *) malloc (row * col * sizeof(Dtype));
+    for (int i = 0; i < row; i++) {
+        for (int j = 0; j < col; j++) {
+            out[i * col + j] = A - B[i * col + j];
+        }
+    }
+}
+
+template <class Dtype>
+Dtype *ScalaMul(Dtype A, Dtype * B, uint row, uint col){
+    Dtype * out = (Dtype *) malloc (row * col * sizeof(Dtype));
+    for (int i = 0; i < row; i++) {
+        for (int j = 0; j < col; j++) {
+            out[i * col + j] = A * B[i * col + j];
+        }
+    }
+}
+
+template <class Dtype>
+Dtype *ScalaAdd(Dtype A, Dtype * B, uint row, uint col){
+    Dtype * out = (Dtype *) malloc (row * col * sizeof(Dtype));
+    for (int i = 0; i < row; i++) {
+        for (int j = 0; j < col; j++) {
+            out[i * col + j] = A + B[i * col + j];
+        }
+    }
+}
+
+template<class Dtype, class T_temp>
+Dtype * MulShift(T_temp A, T_temp S, int n){
+    T_temp B = A * S >> n;
+}
+
 template<class Dtype>
 class Activation {
 public:
@@ -116,32 +152,6 @@ public:
 
         for (int i = 0; i < size; i++) {
             infile >> pdata[i];
-        }
-    }
-
-    void generate_sigmoid_table()
-    {
-        Fixed_point<9,3,6> x;
-        for(int i = 0; i < TABLE_SIZE; i++ )
-        {
-            x.data = i;
-            float float_x = float(x);
-            float float_sigmoid_x = 1/(exp(-float_x)+1);
-            Fixed_point<16,3,13> fix_sigmoid_x(float_sigmoid_x);
-            std::cout<<fix_sigmoid_x<<" "<<std::endl;
-        }
-    }
-
-    void generate_tanh_table()
-    {
-        Fixed_point<9,3,6> x;
-        for(int i = 0; i < TABLE_SIZE; i++ )
-        {
-            x.data = i;
-            float float_x = float(x);
-            float float_tanh_x = (exp(float_x) - exp(-float_x))/(exp(-float_x)+ exp(float_x));
-            Fixed_point<16,3,13> fix_tanh_x(float_tanh_x);
-            std::cout<<fix_tanh_x<<" "<<std::endl;
         }
     }
 

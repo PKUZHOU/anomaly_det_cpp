@@ -37,6 +37,9 @@ private:
     Dtype *b_c = NULL;
     Dtype *b_o = NULL;
 
+    int w_scale; //scale factor, power of 2
+    int b_scale;
+
 public:
     //hidden state and cell state
     //these states will be used and updated at every time step
@@ -88,7 +91,7 @@ public:
     }
 
 
-    void read_weights_from_file(std::string & weights_file, uint size, Dtype * pweights, bool is_circulant)
+    void read_weights_from_file(std::string & weights_file, uint size, Dtype * pweights, bool is_circulant, int scale = 0)
     {
         std::ifstream infile;
         infile.open(weights_file.data());
@@ -104,62 +107,79 @@ public:
         {
             std::string tmp;
             infile >> pweights[i];
+            pweights[i].SCALE = scale;
         }
+    }
+
+    void read_scale_from_file(std::string & scale_file, int * scale)
+    {
+        std::ifstream infile;
+        infile.open(scale_file.data());
+        assert(infile.is_open());
+        std::string s;
+        getline(infile, s);
+        infile >> *scale;
     }
 
     void load_params(std::string &weight_path) {
 
         cout<<"loading lstm "<<layerIdx<<endl;
 
+        //load scale
+        string w_scale_file = weight_path+string("/lstm_")+to_string(layerIdx)+string("_w_scale.txt");
+        read_scale_from_file(w_scale_file, &this->w_scale);
+
+        string b_scale_file = weight_path+string("/lstm_")+to_string(layerIdx)+string("_b_scale.txt");
+        read_scale_from_file(b_scale_file, &this->b_scale);
+
         this->w_xi = (Dtype *) malloc(this->input_size * this->hidden_size * sizeof(Dtype));
         string weight_file = weight_path+string("/lstm_")+to_string(layerIdx)+string("_wxi.txt");
         // IF Using block circulant, we only use 1/CIRCULANT_SIZE of the total allocated memory
-        read_weights_from_file(weight_file, this->input_size * this->hidden_size, this->w_xi,this->is_circulant[0]);
+        read_weights_from_file(weight_file, this->input_size * this->hidden_size, this->w_xi,this->is_circulant[0], this->w_scale);
 
         this->w_xf = (Dtype *) malloc(this->input_size * this->hidden_size * sizeof(Dtype));
         weight_file = weight_path+string("/lstm_")+to_string(layerIdx)+string("_wxf.txt");
-        read_weights_from_file(weight_file, this->input_size * this->hidden_size , this->w_xf,this->is_circulant[1]);
+        read_weights_from_file(weight_file, this->input_size * this->hidden_size , this->w_xf,this->is_circulant[1],this->w_scale);
 
         this->w_xc = (Dtype *) malloc(this->input_size * this->hidden_size * sizeof(Dtype));
         weight_file = weight_path+string("/lstm_")+to_string(layerIdx)+string("_wxc.txt");
-        read_weights_from_file(weight_file, this->input_size * this->hidden_size , this->w_xc,this->is_circulant[2]);
+        read_weights_from_file(weight_file, this->input_size * this->hidden_size , this->w_xc,this->is_circulant[2],this->w_scale);
 
         this->w_xo = (Dtype *) malloc(this->input_size * this->hidden_size * sizeof(Dtype));
         weight_file = weight_path+string("/lstm_")+to_string(layerIdx)+string("_wxo.txt");
-        read_weights_from_file(weight_file, this->input_size * this->hidden_size , this->w_xo,this->is_circulant[3]);
+        read_weights_from_file(weight_file, this->input_size * this->hidden_size , this->w_xo,this->is_circulant[3],this->w_scale);
 
         this->w_hi = (Dtype *) malloc(this->hidden_size * this->hidden_size * sizeof(Dtype));
         weight_file = weight_path+string("/lstm_")+to_string(layerIdx)+string("_whi.txt");
-        read_weights_from_file(weight_file, this->hidden_size * this->hidden_size , this->w_hi,this->is_circulant[4]);
+        read_weights_from_file(weight_file, this->hidden_size * this->hidden_size , this->w_hi,this->is_circulant[4],this->w_scale);
 
         this->w_hf = (Dtype *) malloc(this->hidden_size * this->hidden_size * sizeof(Dtype));
         weight_file = weight_path+string("/lstm_")+to_string(layerIdx)+string("_whf.txt");
-        read_weights_from_file(weight_file, this->hidden_size * this->hidden_size , this->w_hf,this->is_circulant[5]);
+        read_weights_from_file(weight_file, this->hidden_size * this->hidden_size , this->w_hf,this->is_circulant[5],this->w_scale);
 
         this->w_hc = (Dtype *) malloc(this->hidden_size * this->hidden_size * sizeof(Dtype));
         weight_file = weight_path+string("/lstm_")+to_string(layerIdx)+string("_whc.txt");
-        read_weights_from_file(weight_file, this->hidden_size * this->hidden_size , this->w_hc,this->is_circulant[6]);
+        read_weights_from_file(weight_file, this->hidden_size * this->hidden_size , this->w_hc,this->is_circulant[6],this->w_scale);
 
         this->w_ho = (Dtype *) malloc(this->hidden_size * this->hidden_size * sizeof(Dtype));
         weight_file = weight_path+string("/lstm_")+to_string(layerIdx)+string("_who.txt");
-        read_weights_from_file(weight_file, this->hidden_size * this->hidden_size , this->w_ho,this->is_circulant[7]);
+        read_weights_from_file(weight_file, this->hidden_size * this->hidden_size , this->w_ho,this->is_circulant[7],this->w_scale);
 
         this->b_i = (Dtype *) malloc(this->hidden_size * sizeof(Dtype));
         weight_file = weight_path+string("/lstm_")+to_string(layerIdx)+string("_bi.txt");
-        read_weights_from_file(weight_file, this->hidden_size , this->b_i, false);
+        read_weights_from_file(weight_file, this->hidden_size , this->b_i, false,this->b_scale);
 
         this->b_f = (Dtype *) malloc(this->hidden_size * sizeof(Dtype));
         weight_file = weight_path+string("/lstm_")+to_string(layerIdx)+string("_bf.txt");
-        read_weights_from_file(weight_file, this->hidden_size , this->b_f,false);
+        read_weights_from_file(weight_file, this->hidden_size , this->b_f,false,this->b_scale);
 
         this->b_c = (Dtype *) malloc(this->hidden_size * sizeof(Dtype));
         weight_file = weight_path+string("/lstm_")+to_string(layerIdx)+string("_bc.txt");
-        read_weights_from_file(weight_file, this->hidden_size , this->b_c,false);
+        read_weights_from_file(weight_file, this->hidden_size , this->b_c,false,this->b_scale);
 
         this->b_o = (Dtype *) malloc(this->hidden_size * sizeof(Dtype));
         weight_file = weight_path+string("/lstm_")+to_string(layerIdx)+string("_bo.txt");
-        read_weights_from_file(weight_file, this->hidden_size , this->b_o,false);
-
+        read_weights_from_file(weight_file, this->hidden_size , this->b_o,false,this->b_scale);
     }
 
 
