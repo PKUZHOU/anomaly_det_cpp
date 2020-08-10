@@ -1,16 +1,16 @@
 #LSTM Model For Anomaly Detection
 
-### 2020-8-10 Update
-
-Add fastGRNN (int8)
-
-
 This is an anomaly detection model which is composed of a two-layer LSTM and a    Fully connected layer
 
 You can run this project by running the following commands:
 `cmake .`
 `make -j`
 `./lstm`
+
+#### 2020-8-10 Update
+
+Add fastGRNN (int8)
+
 
 #### 2020-3-3 Update
 
