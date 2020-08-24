@@ -7,6 +7,16 @@ You can run this project by running the following commands:
 `make -j`
 `./lstm`
 
+#### 2020-8-24 Update
+
+In this version we choose to use a simplified way to implement int8. It is similar to FIX16, but we set different integer bits for each layer for better accuracy. 
+
+The weight/scale(int bits)/spreadsheet can be found in txtfile folder.
+
+You can run the program and the output should be
+
+    `output is :2F 37 0F BA DA`
+
 #### 2020-8-10 Update
 
 Add fastGRNN (int8)
