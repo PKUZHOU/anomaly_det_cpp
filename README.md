@@ -7,6 +7,11 @@ You can run this project by running the following commands:
 `make -j`
 `./lstm`
 
+#### 2020-8-10 Update
+
+Add fastGRNN (int8)
+
+
 #### 2020-3-3 Update
 
 Now we have regenerated the weight and spreadsheet, which you can see in the block_circulant folder 
