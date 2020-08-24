@@ -11,71 +11,63 @@
 #include "operator.h"
 #include <string>
 #include <fstream>
+#include "data_type.h"
 
 using namespace std;
 
-#define block_circulant
-#define CIRCULANT_SIZE 8
-template<class Dtype, class T_temp>
-class fast_grnn_kernel {
-private:
-
+template <class Dtype>
+class fast_grnn_cell {
+//private:
+public:
     uint input_size;  //size of the input data
     uint hidden_size; //size of the hidden state
     uint layerIdx;    //layer 0 or layer 1
 
     /*the pointers to the weights and biases of each gate*/
-    Dtype *W = NULL;
+    Mat<Dtype>* W = NULL;
+    Mat<Dtype>* U = NULL;
+    Mat<Dtype>* bias_gate = NULL;
+    Mat<Dtype>* bias_update = NULL;
+    Mat<Dtype>* zeta = NULL;
+    Mat<Dtype>* nu = NULL;
 
-    Dtype *U = NULL;
+    /*integer bits*/
+    uint S_in = 0;
+    uint S_wComp = 0;
+    uint S_uComp = 0;
 
-    Dtype *b_z = NULL;
-    Dtype *b_h = NULL;
+    uint S_z_state = 0;
+    uint S_c_b = 0;
+    uint S_c_af = 0;
 
-    Dtype * zeta = NULL;
-    Dtype * nu = NULL;
+    uint S_W = 0;
+    uint S_U = 0;
+    uint S_zeta = 0;
+    uint S_nu = 0;
+    uint S_bias_gate = 0;
+    uint S_bias_update = 0;
 
-    // S/2^n
-    T_temp S; int n;
-
-public:
-    //hidden state and cell state
-    //these states will be used and updated at every time step
-    Dtype *h_state = NULL;
-
-    bool is_circulant[CIRCULANT_SIZE] = {0}; /*use this mask to indicate what matrices are block circulant*/
-
-    fast_grnn_kernel(const uint input_size, const uint hidden_size, const uint layerIdx) {
+    fast_grnn_cell(const uint input_size, const uint hidden_size, const uint layerIdx) {
         this->input_size = input_size;
         this->hidden_size = hidden_size;
         this->layerIdx = layerIdx;
     }
 
-
+    // TODO : new activation table
     Activation<Dtype> * activation = new Activation<Dtype>(std::string("./"));
 
-    ~fast_grnn_kernel() {
-        free(W);
-        free(U);
-        free(b_z);
-        free(b_h);
-        free(zeta);
-        free(nu);
-
-        free(h_state);
-    }
-
-    void reset() {
-
-        //clear the hidden state and cell state
-        if (!this->h_state) {
-            this->h_state = (Dtype *) malloc(sizeof(Dtype) * this->hidden_size);
-        }
-        memset(h_state, 0, sizeof(Dtype) * this->hidden_size);
+    ~fast_grnn_cell() {
+        delete (W);
+        delete (U);
+        delete (bias_gate);
+        delete (bias_update);
+        delete (zeta);
+        delete (nu);
     }
 
 
-    void read_weights_from_file(std::string & weights_file, uint size, Dtype * pweights, bool is_circulant)
+
+    void read_weights_from_file(std::string & weights_file, uint size, Mat<Dtype> * pweights)
     {
         std::ifstream infile;
         infile.open(weights_file.data());
@@ -84,94 +76,89 @@ public:
         //read shape
         getline(infile, s);
 
-        if(is_circulant)
-            size/=CIRCULANT_SIZE;
-
         for(int i = 0;i<size;i++)
         {
-            std::string tmp;
-            infile >> pweights[i];
+            infile >> (*pweights)[i];
         }
     }
 
-    void read_scale_from_file(std::string & scale_file)
-    {
+    void read_scale_from_file(std::string & scale_file, uint & p_scale){
         std::ifstream infile;
         infile.open(scale_file.data());
         assert(infile.is_open());
-        std::string s;
-        getline(infile, s);
+        infile >> p_scale;
     }
 
-    void load_params(std::string &weight_path) {
+    void load_scale(std::string &scale_path){
+        cout <<"loading scale"<<layerIdx<<endl;
 
+        #define LOAD(file_name, data)  \
+                scale_file = scale_path+string("/")+string(file_name)+to_string(layerIdx)+string(".txt"); \
+                read_scale_from_file(scale_file,data);
+
+        string scale_file;
+        LOAD("in",          this->S_in)
+        LOAD("wComp",       this->S_wComp)
+        LOAD("uComp",       this->S_uComp)
+        LOAD("z_state",     this->S_z_state)
+        LOAD("c_b",         this->S_c_b)
+        LOAD("c_af",        this->S_c_af)
+        LOAD("W",           this->S_W)
+        LOAD("U",           this->S_U)
+        LOAD("zeta",        this->S_zeta)
+        LOAD("nu",          this->S_nu)
+        LOAD("bias_gate",   this->S_bias_gate)
+        LOAD("bias_update", this->S_bias_update)
+    }
+
+    void load_weight(std::string &weight_path){
+
+        #define LOAD(data, row, col, scale, file_name) \
+                data = new Mat<Dtype>(row,  col, scale); \
+                weight_file = weight_path+ string("/") + string(file_name) +to_string(layerIdx)+string(".txt"); \
+                read_weights_from_file(weight_file, (row) * col, data);
+
+        string weight_file;
+
+        LOAD(this->W,this->input_size, this->hidden_size, S_W, "W")
+        LOAD(this->U, this->hidden_size, this->hidden_size, S_U, "U")
+        LOAD(this->bias_update,1, this->hidden_size,S_bias_update,"bias_update")
+        LOAD(this->bias_gate,1, this->hidden_size,S_bias_gate,"bias_gate")
+        LOAD(this->nu,1,1,S_nu ,"nu")
+        LOAD(this->zeta, 1, 1, S_zeta, "zeta")
+    }
+
+    void load_params(std::string &param_path) {
         cout<<"loading fast grnn "<<layerIdx<<endl;
-
-        this->W = (Dtype *) malloc(this->input_size * this->hidden_size * sizeof(Dtype));
-        string weight_file = weight_path+string("/fast_grnn_")+to_string(layerIdx)+string("_W.txt");
-        // IF Using block circulant, we only use 1/CIRCULANT_SIZE of the total allocated memory
-        read_weights_from_file(weight_file, this->input_size * this->hidden_size, this->W);
-
-        weight_file = weight_path+string("/fast_grnn_")+to_string(layerIdx)+string("_U.txt");
-        read_weights_from_file(weight_file, this->hidden_size * this->hidden_size , this->U);
-
-        this->b_z = (Dtype *) malloc(this->hidden_size * sizeof(Dtype));
-        weight_file = weight_path+string("/fast_grnn_")+to_string(layerIdx)+string("_b_z.txt");
-        read_weights_from_file(weight_file, this->hidden_size , this->b_z, false);
-
-        this->b_h = (Dtype *) malloc(this->hidden_size * sizeof(Dtype));
-        weight_file = weight_path+string("/fast_grnn_")+to_string(layerIdx)+string("_b_h.txt");
-        read_weights_from_file(weight_file, this->hidden_size , this->b_h, false);
+        string weight_path = param_path + string("/weight");
+        string scale_path = param_path + string("/scale");
+        load_scale(scale_path);
+        load_weight(weight_path);
     }
 
+    void forward(Mat<Dtype> *x_t, Mat<Dtype> * h_state) {
+        Mat<Dtype> *h_t = h_state;
+        Mat<Dtype> *wComp = x_t->matmul(W,S_wComp);
+        Mat<Dtype> *uComp = h_t->matmul(U,S_uComp);
+        Mat<Dtype> *preComp = wComp->matadd(uComp);
+        Mat<Dtype> *z_s_before = preComp->matadd(bias_gate);
+        Mat<Dtype> *z = activation->sigmoid(z_s_before);
+        Mat<Dtype> *c_t_before = preComp->matadd(bias_update);
+        Mat<Dtype> *c = activation->tanh(c_t_before);
+        Mat<Dtype> *one_z = z->one_sub();
+        Mat<Dtype> *z_state = z->mul(h_t, S_z_state);
+        Mat<Dtype> *pre_c_b = zeta->matmul(one_z,S_c_b);
+        Mat<Dtype> *c_b = pre_c_b->add_scalar(nu);
+        Mat<Dtype> *c_af = c_b->mul(c, S_c_af);
+        Mat<Dtype> *new_h = z_state->matadd((c_af));
+        *(h_state) = *new_h;
+//        cout<<layerIdx<<endl;
+//        cout<<"-----------------------"<<endl;
+//        for(int i =0;i<64;i++){
+//            cout<<(*h_state)[i]<<" ";
+//        }
+//        cout<<endl;
 
-    void forward(Dtype *x_t) {
-
-        Dtype *h_t = this->h_state;
-
-        // W@x
-        T_temp *W_mm_x = MatMul(W, x_t, hidden_size, input_size, input_size, 1, this->is_circulant[0]);
-
-        // U@h
-        T_temp *U_mm_h_t = MatMul(U, h_t, hidden_size, hidden_size, hidden_size, 1, this->is_circulant[1]);
-
-        // sigma(W@x+U@h+b_z)
-        Dtype *z_t = activation->sigmoid(MulShift<Dtype,T_temp>(MatAddTri(W_mm_x, b_z, U_mm_h_t, hidden_size, 1),S,n), hidden_size, 1);
-
-        // tanh(W@x+U@h+b_h)
-        Dtype *h_hat = activation->tanh(MulShift<Dtype,T_temp>(MatAddTri(W_mm_x, b_h, U_mm_h_t, hidden_size, 1),S,n), hidden_size, 1);
-
-        // 1-z_t
-        Dtype * one_sub_z_t = ScalaSub(Dtype(1.0), z_t, hidden_size, 1);
-
-        //zeta(1-z_t)
-        T_temp * zeta_mul = ScalaMul(zeta, one_sub_z_t, hidden_size, 1);
-
-        //zeta(1-z_t)+nu
-        T_temp * c_b = ScalaAdd(nu, zeta_mul, hidden_size, 1);
-
-        //(zeta(1-z_t)+nu)dot(h_hat)
-        T_temp * c_b_dot_h_hat = MatDot(c_b, h_hat, hidden_size, 1);
-
-        //z_t dot h_t
-        T_temp * z_t_dot_h_t = MatDot(z_t, h_t, hidden_size, 1);
-
-
-        Dtype * h_next = MulShift<Dtype, T_temp>(MatAddDuo(c_b_dot_h_hat, z_t_dot_h_t, hidden_size, 1),S,n);
-
-        //update the reserved hidden states and  cell states
-        memcpy(this->h_state, h_next, sizeof(Dtype) * hidden_size);
-
-        //free the allocated temporary memory
-        free(h_hat);
-        free(c_b_dot_h_hat);
-        free(c_b);
-        free(z_t_dot_h_t);
-        free(z_t);
-        free(W_mm_x);
-        free(U_mm_h_t);
-        free(h_next);
-        free(h_t);
     }
 };
 

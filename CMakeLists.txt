@@ -5,4 +5,4 @@ set(CMAKE_CXX_STANDARD 11)
 
 include_directories(./include)
 
-add_executable(lstm main.cpp  )
+add_executable(lstm main.cpp include/fast_grnn.h)

@@ -8,28 +8,28 @@
 #include "operator.h"
 #include <string>
 
-template <class Dtype, class T_temp>
+template <class Dtype>
 class FC{
     /*Fully connected layer  f(x) = w*x + b where w denotes weight matrix b is bias vector  */
-private:
+public:
     uint input_size;     // equals to the columns number of weight matrix
     uint output_size;    // equals to the rows number of weight matrix
-    Dtype * weight;      // pointer to the weight
-    Dtype * bias;        // pointer to the bias
 
-    int w_scale;
-    int b_scale;
+    Mat<Dtype> * weight;      // pointer to the weight
+    Mat<Dtype> * bias;        // pointer to the bias
+    Mat<Dtype> * out;  // pointer to the final output
+    uint S_weight;
+    uint S_bias;
+    uint S_w_i;
 
 public:
-    Dtype * out;  // pointer to the final output
-
     FC(uint input_size, uint out_size)
     {
         /*construction function, initialize the input size and output size*/
         this->input_size = input_size;
         this->output_size = out_size;
     }
-    void read_weights_from_file(std::string & weights_file, uint size, Dtype * pweights, int scale = 0)
+    void read_weights_from_file(std::string & weights_file, uint size, Mat<Dtype> * pweights)
     {
         std::ifstream infile;
         infile.open(weights_file.data());
@@ -37,50 +37,53 @@ public:
         std::string s;
         //read shape
         getline(infile, s);
-//        cout<<s<<endl;
+
         for(int i = 0;i<size;i++)
         {
-            infile >> pweights[i];
-            pweights[i].SCALE = scale;
+            infile >> (*pweights)[i];
         }
     }
 
-    void read_scale_from_file(std::string & scale_file, int * scale)
+    void read_scale_from_file(std::string & scale_file, uint & p_scale)
     {
         std::ifstream infile;
         infile.open(scale_file.data());
         assert(infile.is_open());
         std::string s;
-        getline(infile, s);
-        infile >> *scale;
+//        getline(infile, s);
+        infile >> p_scale;
     }
 
-    void load_params(std::string& weight_path)
+    void load_params(std::string& param_path)
     {
         cout<<"loading fc "<<endl;
 
-        this->weight = (Dtype*) malloc(this->input_size * this->output_size * sizeof(Dtype));
-        this->bias = (Dtype*) malloc(this->output_size * sizeof(Dtype));
+        string weight_path = param_path + string("/weight");
+        string scale_path = param_path + string("/scale");
 
-        string w_scale_file = weight_path+string("/fc_w_scale.txt");
-        read_scale_from_file(w_scale_file, &this->w_scale);
+        #define LOAD_SCALE(file_name, data)  \
+                scale_file = scale_path+string("/")+string(file_name)+string(".txt"); \
+                read_scale_from_file(scale_file,data);
 
-        string b_scale_file = weight_path+string("/fc_b_scale.txt");
-        read_scale_from_file(b_scale_file,&this->b_scale);
+        string scale_file;
+        LOAD_SCALE("weight_fc", this->S_weight)
+        LOAD_SCALE("bias_fc",this->S_bias)
+        LOAD_SCALE("weight@i_fc",this->S_w_i)
 
-        string weight_file = weight_path+string("/fc_w.txt");
-        read_weights_from_file(weight_file, this->input_size * this->output_size , this->weight, this->w_scale);
 
-        weight_file = weight_path+string("/fc_b.txt");
-        read_weights_from_file(weight_file, this->output_size, this->bias, this->b_scale);
+        #define LOAD(data, row, col, scale, file_name) \
+                data = new Mat<Dtype>(row,  col, scale); \
+                weight_file = weight_path+ string("/") + string(file_name) +string(".txt"); \
+                read_weights_from_file(weight_file, row * col, data);
+
+        string weight_file;
+        LOAD(this->weight,this->input_size,this->output_size,S_weight, "fc_w")
+        LOAD( this->bias, 1, this->output_size, S_bias, "fc_bias")
     }
 
-    void forward(Dtype * x){
-        //w@x
-        Dtype * w_mm_x =  MatMul(this->weight, x, output_size, input_size, input_size, 1,false);
-        //w@x + b
-        this->out = MatAddDuo(w_mm_x, bias, output_size, 1 );
-        free(w_mm_x);
+    void forward(Mat<Dtype> * x){
+        Mat<Dtype> * fc_w_i = x->matmul(this->weight, S_w_i);
+        out = fc_w_i->matadd(bias);
     }
 };
 

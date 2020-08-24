@@ -126,18 +126,14 @@ Dtype * MulShift(T_temp A, T_temp S, int n){
 template<class Dtype>
 class Activation {
 public:
-    Activation()
-    {
-
-    }
-
+    Activation(){}
     Activation(const std::string &table_paths) {
         std::string sigmoid_path = table_paths + std::string("/sigmoid_table.txt");
         read_table_from_file(sigmoid_path, TABLE_SIZE, sigmoid_table);
         std::string tanh_path = table_paths + std::string("/tanh_table.txt");
         read_table_from_file(tanh_path, TABLE_SIZE, tanh_table);
     }
-    static const int TABLE_SIZE = 512;
+    static const int TABLE_SIZE = 256;
 
     Dtype sigmoid_table[TABLE_SIZE];
     Dtype tanh_table[TABLE_SIZE];
@@ -151,43 +147,48 @@ public:
         getline(infile, s); // dismiss the first line (the first line is the shape)
 
         for (int i = 0; i < size; i++) {
+            pdata[i].INTBits = 1;
             infile >> pdata[i];
         }
     }
 
-    Dtype f_sigmoid( Dtype &x) {
+    Dtype& f_sigmoid( Dtype &x) {
         int index;
-        // truncate the x, get the first 9bits
-        index = (x.data >> 7)&0x1FF;
+        index = (x.data)&0xFF;
         return sigmoid_table[index];
     }
 
-    Dtype f_tanh( Dtype &x) {
+    Dtype& f_tanh( Dtype &x) {
         int index;
-        // truncate the x, get the first 9bits
-        index = (x.data >> 7)&0x1FF;
+        index = (x.data)&0xFF;
         return tanh_table[index];
     }
 
-    Dtype *sigmoid(Dtype *A, uint row, uint col) {
-        Dtype * out = (Dtype *) malloc(row * col * sizeof(Dtype));
+    Mat<Dtype> *sigmoid(Mat<Dtype> *A) {
+        uint row = A->row;
+        uint col = A->col;
+
+        Mat<Dtype>* out = new Mat<Dtype>(A->row,A->col, 1);
         for(int i = 0;i<row;i++)
         {
             for(int j = 0;j<col;j++)
             {
-                out[i*col + j] = f_sigmoid(A[i*col + j]);
+                (*out)[i*col + j]  = f_sigmoid((*A)[i*col + j]);
             }
         }
         return out;
     }
 
-    Dtype *tanh(Dtype *A, uint row, uint col) {
-        Dtype * out = (Dtype *) malloc(row * col * sizeof(Dtype));
+    Mat<Dtype> *tanh(Mat<Dtype> *A) {
+        uint row = A->row;
+        uint col = A->col;
+
+        Mat<Dtype> *out = new Mat<Dtype>(A->row,A->col, 1);
         for(int i = 0;i<row;i++)
         {
             for(int j = 0;j<col;j++)
             {
-                out[i*col + j] = f_tanh(A[i*col + j]);
+                (*out)[i*col + j] = f_tanh((*A)[i*col + j]);
             }
         }
         return out;
