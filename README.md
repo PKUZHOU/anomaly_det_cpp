@@ -1,4 +1,4 @@
-#LSTM Model For Anomaly Detection
+# LSTM Model For Anomaly Detection
 
 This is an anomaly detection model which is composed of a two-layer LSTM and a    Fully connected layer
 
@@ -6,6 +6,14 @@ You can run this project by running the following commands:
 `cmake .`
 `make -j`
 `./lstm`
+
+#### 2020-10-16 Update
+
+Add tmp, weight, input and sigmoid/tanh tables of 4-layer FastGRNN.
+
+The rounding strategy is the same with the lstm version, namely round to 16bit after each addition and multiplication.
+
+The intbit is set to 3bits for all the data.
 
 #### 2020-8-24 Update
 
