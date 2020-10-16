@@ -150,12 +150,12 @@ public:
         Mat<Dtype> *pre_c_b = zeta->matmul(one_z,S_c_b);
         Mat<Dtype> *c_b = pre_c_b->add_scalar(nu);
         Mat<Dtype> *c_af = c_b->mul(c, S_c_af);
-        Mat<Dtype> *new_h = z_state->matadd((c_af));
+        Mat<Dtype> *new_h = z_state->matadd(c_af);
         *(h_state) = *new_h;
 //        cout<<layerIdx<<endl;
 //        cout<<"-----------------------"<<endl;
 //        for(int i =0;i<64;i++){
-//            cout<<(*h_state)[i]<<" ";
+//            cout<<(*z_state)[i]<<" ";
 //        }
 //        cout<<endl;
 

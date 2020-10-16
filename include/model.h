@@ -15,6 +15,9 @@ class FAST_GRNN {
 private:
     fast_grnn_cell<Dtype> *fast_grnn_0 = NULL;  // first  layer
     fast_grnn_cell<Dtype> *fast_grnn_1 = NULL;  // second  layer
+    fast_grnn_cell<Dtype> *fast_grnn_2 = NULL;  // second  layer
+    fast_grnn_cell<Dtype> *fast_grnn_3 = NULL;  // second  layer
+
     FC<Dtype> * fc = NULL;                      // final fc layer
 
 public:
@@ -32,8 +35,12 @@ public:
 
         this->fast_grnn_0 = new fast_grnn_cell<Dtype>(input_size, hidden_size, 0);
 
-        //the second lstm layer takes the hidden_state of first lstm layer as input, so the input_size equals to hiden_size
         this->fast_grnn_1 = new fast_grnn_cell<Dtype>(input_size, hidden_size, 1);
+
+        this->fast_grnn_2 = new fast_grnn_cell<Dtype>(input_size, hidden_size, 2);
+
+        this->fast_grnn_3 = new fast_grnn_cell<Dtype>(input_size, hidden_size, 3);
+
 
         //fully connected layer takes the hidden_state of last lstm layer as input, so the input_size equals to hiden_size
         this->fc = new FC<Dtype>(hidden_size, out_size);
@@ -44,6 +51,9 @@ public:
     ~FAST_GRNN() {
         delete(this->fast_grnn_0);
         delete(this->fast_grnn_1);
+        delete(this->fast_grnn_2);
+        delete(this->fast_grnn_3);
+
         delete(this->fc);
         free(this->out);
     };
@@ -68,6 +78,8 @@ public:
 
             this->fast_grnn_0->forward(&x_st, h_state);
             this->fast_grnn_1->forward(&x_st, h_state);
+            this->fast_grnn_2->forward(&x_st, h_state);
+            this->fast_grnn_3->forward(&x_st, h_state);
 
             this->fc->forward(h_state);
             this->out = this->fc->out;
@@ -77,6 +89,9 @@ public:
     void load_params(std::string param_path) {
         this->fast_grnn_0->load_params(param_path);
         this->fast_grnn_1->load_params(param_path);
+        this->fast_grnn_2->load_params(param_path);
+        this->fast_grnn_3->load_params(param_path);
+
         this->fc->load_params(param_path);
     }
 };
