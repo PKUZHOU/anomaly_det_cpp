@@ -140,7 +140,18 @@ public:
         Mat<Dtype> *h_t = h_state;
         Mat<Dtype> *wComp = x_t->matmul(W,S_wComp);
         Mat<Dtype> *uComp = h_t->matmul(U,S_uComp);
+
+
+
         Mat<Dtype> *preComp = wComp->matadd(uComp);
+
+//        cout<<layerIdx<<endl;
+//        cout<<"-----------------------"<<endl;
+//        for(int i =0;i<64;i++){
+//            cout<<(*wComp)[i]<<" ";
+//        }
+//        cout<<endl;
+
         Mat<Dtype> *z_s_before = preComp->matadd(bias_gate);
         Mat<Dtype> *z = activation->sigmoid(z_s_before);
         Mat<Dtype> *c_t_before = preComp->matadd(bias_update);
@@ -152,12 +163,7 @@ public:
         Mat<Dtype> *c_af = c_b->mul(c, S_c_af);
         Mat<Dtype> *new_h = z_state->matadd(c_af);
         *(h_state) = *new_h;
-//        cout<<layerIdx<<endl;
-//        cout<<"-----------------------"<<endl;
-//        for(int i =0;i<64;i++){
-//            cout<<(*h_state)[i]<<" ";
-//        }
-//        cout<<endl;
+
     }
 };
 
