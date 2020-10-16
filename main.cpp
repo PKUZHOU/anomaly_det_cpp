@@ -12,7 +12,7 @@ int test_fast_grnn(){
 
     const uint input_size = 1;
     const uint hidden_size =128;
-    const uint output_size = 5;
+    const uint output_size = 2;
     const uint time_steps = 256;
 
     auto model = new FAST_GRNN<INT16>(input_size, hidden_size, output_size, param_path);
