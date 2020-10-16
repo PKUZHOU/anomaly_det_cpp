@@ -10,12 +10,12 @@
 
 #include <vector>
 
-template <int tot_bits = 8>
+template <int tot_bits = 16>
 class INT{
 public:
     int data = 0; // use int32 to hold the  data
     int TOTBits = tot_bits;
-    int INTBits = -1;
+    int INTBits = 3;
 
     int saturate(int b)  // truncate the fixed_point data to the valid range.
     {
@@ -56,21 +56,38 @@ public:
     }
 
 
-    INT(const char raw[2]) // init from hex data , eg. "1F" now only support 8bit
+    // INT(const char raw[2]) // init from hex data , eg. "1F" now only support 8bit
+    // {
+    //     for(int i = 0;i<2;i++)
+    //     {
+    //         if('0'<=raw[i] and raw[i]<='9')
+    //         {
+    //             data+=((raw[i]-'0')<<(4*(1-i)));
+    //         }
+    //         else
+    //         {
+    //             data+=((raw[i]-'A'+10)<<(4*(1-i)));
+    //         }
+    //     }
+    //     data = data<<(32-TOTBits)>>(32-TOTBits); // the shift operation guarantees the two's complement format for negative values
+    // }
+
+    INT(const char raw[4]) // init from hex data 
     {
-        for(int i = 0;i<2;i++)
+        for(int i = 0;i<4;i++)
         {
             if('0'<=raw[i] and raw[i]<='9')
             {
-                data+=((raw[i]-'0')<<(4*(1-i)));
+                data+=((raw[i]-'0')<<(4*(3-i)));
             }
             else
             {
-                data+=((raw[i]-'A'+10)<<(4*(1-i)));
+                data+=((raw[i]-'A'+10)<<(4*(3-i)));
             }
         }
         data = data<<(32-TOTBits)>>(32-TOTBits); // the shift operation guarantees the two's complement format for negative values
     }
+
 
     INT(const INT& b) //init from other INT data
     {
@@ -80,12 +97,16 @@ public:
     INT operator * (const INT &b)
     {
         INT c;
-        c.TOTBits = TOTBits + b.TOTBits;
-        c.INTBits = INTBits + b.INTBits;
+//        c.TOTBits = TOTBits + b.TOTBits;
+//        c.INTBits = INTBits + b.INTBits;
+
+        c.TOTBits = TOTBits;
+        c.INTBits = INTBits;
 
         int a_data = data;
         int b_data = b.data;
-        int c_data = a_data*b_data;
+//        int c_data = a_data*b_data;
+        int c_data = a_data * b_data >> (TOTBits-INTBits);
         c.data = c_data;
         return c;
     }
@@ -195,6 +216,11 @@ public:
             data[i].TOTBits = temp.TOTBits;
             data[i].INTBits = intbits_;
         }
+
+        // set 0
+        for (int i = 0;i<row*col;i++){
+            data[i].data = 0;
+        }
     }
 
     Mat(Dtype* data_, const int row_, const int col_, const uint intbits_){
@@ -239,8 +265,11 @@ public:
             for (int j = 0; j < B_col; j++) {
 
                 INT<> sum = 0;
-                sum.TOTBits = data[0].TOTBits + b->data[0].TOTBits;
-                sum.INTBits = this->intbits + b->intbits;
+//                sum.TOTBits = data[0].TOTBits + b->data[0].TOTBits;
+                sum.TOTBits = data[0].TOTBits;
+//                sum.INTBits = this->intbits + b->intbits;
+                sum.INTBits = this->intbits;
+
 
                 for (int k = 0; k < A_col; k++) {
                     int offset = i * A_col + k;

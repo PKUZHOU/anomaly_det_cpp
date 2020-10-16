@@ -8,7 +8,7 @@
 #include <memory.h>
 #include <cassert>
 //#include <malloc.h>
-#include <sys/malloc.h>
+#include <malloc.h>
 #include <cmath>
 #include <data_type.h>
 #include <fstream>
@@ -133,7 +133,7 @@ public:
         std::string tanh_path = table_paths + std::string("/tanh_table.txt");
         read_table_from_file(tanh_path, TABLE_SIZE, tanh_table);
     }
-    static const int TABLE_SIZE = 256;
+    static const int TABLE_SIZE = 512;
 
     Dtype sigmoid_table[TABLE_SIZE];
     Dtype tanh_table[TABLE_SIZE];
@@ -147,20 +147,22 @@ public:
         getline(infile, s); // dismiss the first line (the first line is the shape)
 
         for (int i = 0; i < size; i++) {
-            pdata[i].INTBits = 1;
+            pdata[i].INTBits = 3;
             infile >> pdata[i];
         }
     }
 
     Dtype& f_sigmoid( Dtype &x) {
         int index;
-        index = (x.data)&0xFF;
+//        index = (x.data)&0xFF;
+        index = (x.data >> 7)  &0x1FF;
         return sigmoid_table[index];
     }
 
     Dtype& f_tanh( Dtype &x) {
         int index;
-        index = (x.data)&0xFF;
+//        index = (x.data)&0xFF;
+        index = (x.data >> 7)  &0x1FF;
         return tanh_table[index];
     }
 
@@ -168,7 +170,7 @@ public:
         uint row = A->row;
         uint col = A->col;
 
-        Mat<Dtype>* out = new Mat<Dtype>(A->row,A->col, 1);
+        Mat<Dtype>* out = new Mat<Dtype>(A->row,A->col, 3);
         for(int i = 0;i<row;i++)
         {
             for(int j = 0;j<col;j++)
@@ -183,7 +185,7 @@ public:
         uint row = A->row;
         uint col = A->col;
 
-        Mat<Dtype> *out = new Mat<Dtype>(A->row,A->col, 1);
+        Mat<Dtype> *out = new Mat<Dtype>(A->row,A->col, 3);
         for(int i = 0;i<row;i++)
         {
             for(int j = 0;j<col;j++)

@@ -155,10 +155,9 @@ public:
 //        cout<<layerIdx<<endl;
 //        cout<<"-----------------------"<<endl;
 //        for(int i =0;i<64;i++){
-//            cout<<(*z_state)[i]<<" ";
+//            cout<<(*h_state)[i]<<" ";
 //        }
 //        cout<<endl;
-
     }
 };
 
