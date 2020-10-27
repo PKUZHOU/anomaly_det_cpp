@@ -77,12 +77,12 @@ public:
                 read_weights_from_file(weight_file, row * col, data);
 
         string weight_file;
-        LOAD(this->weight,this->input_size,this->output_size,S_weight, "fc_w")
-        LOAD( this->bias, 1, this->output_size, S_bias, "fc_bias")
+        LOAD(this->weight,this->output_size , this->input_size, S_weight, "fc_w")
+        LOAD( this->bias, this->output_size, 1,  S_bias, "fc_bias")
     }
 
     void forward(Mat<Dtype> * x){
-        Mat<Dtype> * fc_w_i = x->matmul(this->weight, S_w_i);
+        Mat<Dtype> * fc_w_i =  this->weight->matmul(x, S_w_i);
         out = fc_w_i->matadd(bias);
     }
 };

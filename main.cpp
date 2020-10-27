@@ -8,7 +8,7 @@ typedef INT<16> INT16;
 
 int test_fast_grnn(){
     cout << "Initialization" << std::endl;
-    string param_path = "./txtfile_new";
+    string param_path = "./txtfile_circulant";
 
     const uint input_size = 1;
     const uint hidden_size =128;
@@ -26,7 +26,7 @@ int test_fast_grnn(){
     };
 */
     INT16 input_data[time_steps] = {
-        #include "txtfile_new/inputs.h"
+        #include "txtfile_circulant//inputs.h"
         };
     cout << "Forwarding" << std::endl;
     model->forward(input_data,time_steps);

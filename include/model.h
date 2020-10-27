@@ -25,7 +25,10 @@ public:
     //these states will be used and updated at every time step
     uint input_size;
     uint hidden_size;
-    Mat<Dtype>* h_state = NULL;
+    Mat<Dtype>* h_state_0 = NULL;
+    Mat<Dtype>* h_state_1 = NULL;
+    Mat<Dtype>* h_state_2 = NULL;
+    Mat<Dtype>* h_state_3 = NULL;
 
     Mat<Dtype> *out;
 
@@ -35,11 +38,11 @@ public:
 
         this->fast_grnn_0 = new fast_grnn_cell<Dtype>(input_size, hidden_size, 0);
 
-        this->fast_grnn_1 = new fast_grnn_cell<Dtype>(input_size, hidden_size, 1);
+        this->fast_grnn_1 = new fast_grnn_cell<Dtype>(hidden_size, hidden_size, 1);
 
-        this->fast_grnn_2 = new fast_grnn_cell<Dtype>(input_size, hidden_size, 2);
+        this->fast_grnn_2 = new fast_grnn_cell<Dtype>(hidden_size, hidden_size, 2);
 
-        this->fast_grnn_3 = new fast_grnn_cell<Dtype>(input_size, hidden_size, 3);
+        this->fast_grnn_3 = new fast_grnn_cell<Dtype>(hidden_size, hidden_size, 3);
 
 
         //fully connected layer takes the hidden_state of last lstm layer as input, so the input_size equals to hiden_size
@@ -60,8 +63,17 @@ public:
 
     void reset() {
         //clear the hidden state and cell state
-        if (!this->h_state) {
-            this->h_state = new Mat<Dtype>(1, hidden_size,  this->fast_grnn_0->S_z_state);
+        if (!this->h_state_0) {
+            this->h_state_0 = new Mat<Dtype>(hidden_size, 1,  this->fast_grnn_0->S_z_state);
+        }
+        if (!this->h_state_1) {
+            this->h_state_1 = new Mat<Dtype>(hidden_size, 1,  this->fast_grnn_1->S_z_state);
+        }
+        if (!this->h_state_2) {
+            this->h_state_2 = new Mat<Dtype>(hidden_size, 1,  this->fast_grnn_2->S_z_state);
+        }
+        if (!this->h_state_3) {
+            this->h_state_3 = new Mat<Dtype>(hidden_size, 1,  this->fast_grnn_3->S_z_state);
         }
     }
 
@@ -76,12 +88,12 @@ public:
             //sequentially feed the inputs
             Mat<Dtype> x_st(&x[st],1,1,S_in);
 
-            this->fast_grnn_0->forward(&x_st, h_state);
-            this->fast_grnn_1->forward(&x_st, h_state);
-            this->fast_grnn_2->forward(&x_st, h_state);
-            this->fast_grnn_3->forward(&x_st, h_state);
+            this->fast_grnn_0->forward(&x_st, h_state_0);
+            this->fast_grnn_1->forward(h_state_0, h_state_1);
+            this->fast_grnn_2->forward(h_state_1, h_state_2);
+            this->fast_grnn_3->forward(h_state_2, h_state_3);
 
-            this->fc->forward(h_state);
+            this->fc->forward(h_state_3);
             this->out = this->fc->out;
         }
     }

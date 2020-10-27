@@ -15,6 +15,8 @@
 
 using namespace std;
 
+#define  BLOCK_SIZE 8
+
 template <class Dtype>
 class fast_grnn_cell {
 //private:
@@ -64,8 +66,6 @@ public:
         delete (zeta);
         delete (nu);
     }
-
-
 
     void read_weights_from_file(std::string & weights_file, uint size, Mat<Dtype> * pweights)
     {
@@ -119,11 +119,17 @@ public:
                 read_weights_from_file(weight_file, (row) * col, data);
 
         string weight_file;
+        if(layerIdx == 0){
+            LOAD(this->W, this->hidden_size, this->input_size, S_W, "W")
+        }
+        else{
+            LOAD(this->W, this->hidden_size/BLOCK_SIZE, this->input_size,  S_W, "W")
+        }
 
-        LOAD(this->W,this->input_size, this->hidden_size, S_W, "W")
-        LOAD(this->U, this->hidden_size, this->hidden_size, S_U, "U")
-        LOAD(this->bias_update,1, this->hidden_size,S_bias_update,"bias_update")
-        LOAD(this->bias_gate,1, this->hidden_size,S_bias_gate,"bias_gate")
+        LOAD(this->U, this->hidden_size/BLOCK_SIZE, this->hidden_size, S_U, "U")
+
+        LOAD(this->bias_update, this->hidden_size, 1 , S_bias_update,"bias_update")
+        LOAD(this->bias_gate, this->hidden_size, 1, S_bias_gate,"bias_gate")
         LOAD(this->nu,1,1,S_nu ,"nu")
         LOAD(this->zeta, 1, 1, S_zeta, "zeta")
     }
@@ -138,19 +144,21 @@ public:
 
     void forward(Mat<Dtype> *x_t, Mat<Dtype> * h_state) {
         Mat<Dtype> *h_t = h_state;
-        Mat<Dtype> *wComp = x_t->matmul(W,S_wComp);
-        Mat<Dtype> *uComp = h_t->matmul(U,S_uComp);
+
+        Mat<Dtype> *wComp;
+
+        if(layerIdx == 0){
+            wComp = W->matmul(x_t,S_wComp);
+        }
+        else{
+            wComp = W->circ_mul(x_t,S_wComp);
+        }
 
 
+        Mat<Dtype> *uComp = U->circ_mul(h_t,S_uComp);
 
         Mat<Dtype> *preComp = wComp->matadd(uComp);
 
-//        cout<<layerIdx<<endl;
-//        cout<<"-----------------------"<<endl;
-//        for(int i =0;i<64;i++){
-//            cout<<(*wComp)[i]<<" ";
-//        }
-//        cout<<endl;
 
         Mat<Dtype> *z_s_before = preComp->matadd(bias_gate);
         Mat<Dtype> *z = activation->sigmoid(z_s_before);
@@ -158,11 +166,18 @@ public:
         Mat<Dtype> *c = activation->tanh(c_t_before);
         Mat<Dtype> *one_z = z->one_sub();
         Mat<Dtype> *z_state = z->mul(h_t, S_z_state);
-        Mat<Dtype> *pre_c_b = zeta->matmul(one_z,S_c_b);
+        Mat<Dtype> *pre_c_b = one_z->matmul(zeta,S_c_b);
         Mat<Dtype> *c_b = pre_c_b->add_scalar(nu);
         Mat<Dtype> *c_af = c_b->mul(c, S_c_af);
         Mat<Dtype> *new_h = z_state->matadd(c_af);
         *(h_state) = *new_h;
+
+//        cout<<layerIdx<<endl;
+//        cout<<"-----------------------"<<endl;
+//        for(int i =0;i<64;i++){
+//            cout<<(*h_state)[i]<<" ";
+//        }
+//        cout<<endl;
 
     }
 };

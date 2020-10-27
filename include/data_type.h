@@ -10,6 +10,8 @@
 
 #include <vector>
 
+#define CIRCULANT_SIZE 8
+
 template <int tot_bits = 16>
 class INT{
 public:
@@ -202,6 +204,7 @@ public:
     uint col;
     uint intbits;
     Dtype * data;
+    bool is_circulant = false;
 
     Mat(const int row_, const int col_, const uint intbits_){
         row = row_;
@@ -270,9 +273,49 @@ public:
 //                sum.INTBits = this->intbits + b->intbits;
                 sum.INTBits = this->intbits;
 
-
                 for (int k = 0; k < A_col; k++) {
                     int offset = i * A_col + k;
+                    auto out = data[offset] * b->data[k * B_col + j];
+                    sum += out;
+                }
+                C->data[i * C_col + j] = sum;
+            }
+        }
+        return C;
+    }
+
+    Mat<Dtype>* circ_mul(Mat* b, uint intbits){
+
+        uint A_col = col;
+        uint A_row = row * CIRCULANT_SIZE;
+        uint B_row = b->row;
+        uint B_col = b->col;
+
+
+
+        assert(A_col == B_row);
+        uint C_row = A_row;
+        uint C_col = b->col;
+
+        Mat<Dtype>* C = new Mat<Dtype>(C_row, C_col, intbits);
+        for (int i = 0; i < A_row; i++) {
+            for (int j = 0; j < B_col; j++) {
+
+                INT<> sum = 0;
+//                sum.TOTBits = data[0].TOTBits + b->data[0].TOTBits;
+                sum.TOTBits = data[0].TOTBits;
+//                sum.INTBits = this->intbits + b->intbits;
+                sum.INTBits = this->intbits;
+
+                for (int k = 0; k < A_col; k++) {
+//                    int offset = i * A_col + k;
+
+                    int block_i = i/CIRCULANT_SIZE;
+                    int block_j = k/CIRCULANT_SIZE;
+                    int pix_i = i%CIRCULANT_SIZE;
+                    int pix_j = k%CIRCULANT_SIZE;
+                    int offset = block_i*A_col+block_j*CIRCULANT_SIZE+(pix_j+CIRCULANT_SIZE-pix_i)%CIRCULANT_SIZE;
+
                     auto out = data[offset] * b->data[k * B_col + j];
                     sum += out;
                 }
