@@ -7,6 +7,11 @@ You can run this project by running the following commands:
 `make -j`
 `./lstm`
 
+#### 2020-10-28 Update
+
+1. Add block circulant support 
+2. Change all x@W to W@x
+
 #### 2020-10-16 Update
 
 Add tmp, weight, input and sigmoid/tanh tables of 4-layer FastGRNN.
